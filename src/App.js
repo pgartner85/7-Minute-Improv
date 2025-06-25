@@ -386,4 +386,220 @@ const ImprovPracticeApp = () => {
   // Continue to next round
   const continueToNextRound = () => {
     const nextIndex = currentRoundIndex + 1;
-    setCurrentRoundIndex(next
+    setCurrentRoundIndex(nextIndex);
+    const nextRound = roundOrder[nextIndex];
+    
+    // Check if this round needs an instruction screen (rounds with examples)
+    if (nextRound.example) {
+      setPendingRound(nextRound);
+      setGameState('instructions');
+    } else {
+      setGameState('playing');
+      startRound(nextRound);
+    }
+  };
+
+  // Start round from instruction screen
+  const startRoundFromInstructions = () => {
+    setGameState('playing');
+    startRound(pendingRound);
+    setPendingRound(null);
+  };
+
+  // Reset game
+  const resetGame = () => {
+    if (roundTimerRef.current) clearInterval(roundTimerRef.current);
+    if (wordTimerRef.current) clearInterval(wordTimerRef.current);
+    setGameState('start');
+    setCurrentRoundIndex(0);
+    setCurrentWord('');
+    setCurrentGenre('');
+    setTimeLeft(60);
+    setRoundOrder([]);
+    setPendingRound(null);
+  };
+
+  // Cleanup timers on unmount
+  useEffect(() => {
+    return () => {
+      if (roundTimerRef.current) clearInterval(roundTimerRef.current);
+      if (wordTimerRef.current) clearInterval(wordTimerRef.current);
+    };
+  }, []);
+
+  // Helper function to get seconds per word display
+  const getSecondsPerWord = (interval) => {
+    return interval / 1000;
+  };
+
+  // Helper function to get words per round
+  const getWordsPerRound = (interval) => {
+    return 60 / (interval / 1000);
+  };
+
+  // Render different game states
+  if (gameState === 'start') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-600 via-pink-500 to-red-500 flex items-center justify-center p-4">
+        <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-2xl w-full text-center">
+          <h1 className="text-4xl font-bold text-gray-800 mb-6">Daily Seven Minute Improv Workout</h1>
+          <div className="text-left text-gray-600 mb-8 space-y-4">
+            <p><strong>Get ready for 7 rounds of creative thinking!</strong></p>
+            <p>• Each round lasts exactly 60 seconds</p>
+            <p>• Words change at different intervals during each round</p>
+            <p>• Round 1 is always the warm-up, rounds 2-7 are randomly selected from the prompt bank</p>
+            <p>• Over 1000 unique words to keep you challenged</p>
+            <p>• Practice thinking quickly and creatively on your feet</p>
+            <p><strong>Perfect for improv actors, comedians, and anyone wanting to boost their creativity!</strong></p>
+          </div>
+          <button
+            onClick={startNewGame}
+            className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-8 py-4 rounded-xl text-xl font-semibold hover:shadow-lg transform hover:scale-105 transition-all duration-200"
+          >
+            Start Practice
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (gameState === 'playing') {
+    const currentRound = roundOrder[currentRoundIndex];
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-600 via-pink-500 to-red-500 flex items-center justify-center p-4">
+        <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-2xl w-full text-center">
+          <div className="mb-6">
+            <div className="text-lg font-semibold text-gray-600 mb-4">
+              Round {currentRoundIndex + 1}/7 • 60 seconds • {getSecondsPerWord(currentRound.wordInterval)}s per word
+            </div>
+          </div>
+          
+          <div className="mb-8">
+            <div className="text-6xl font-bold text-gray-800 mb-6 min-h-[80px] flex items-center justify-center">
+              {currentWord}
+            </div>
+            {currentGenre && (
+              <div className="text-4xl font-semibold text-purple-600 mb-4">
+                Genre: {currentGenre}
+              </div>
+            )}
+            <div className="text-xl text-gray-700 px-4">
+              {currentRound.prompt}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (gameState === 'instructions') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-600 via-pink-500 to-red-500 flex items-center justify-center p-4">
+        <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-3xl w-full text-center">
+          <div className="text-3xl font-bold text-gray-800 mb-6">
+            Round {currentRoundIndex + 1}/7 - Instructions
+          </div>
+          
+          <div className="text-left text-gray-700 mb-8 space-y-6">
+            <div className="bg-blue-50 p-6 rounded-xl">
+              <h3 className="text-xl font-semibold text-blue-800 mb-3">Your Task:</h3>
+              <p className="text-lg text-blue-700">{pendingRound.prompt}</p>
+            </div>
+            
+            <div className="bg-green-50 p-6 rounded-xl">
+              <h3 className="text-xl font-semibold text-green-800 mb-3">Example:</h3>
+              <p className="text-lg text-green-700">{pendingRound.example}</p>
+            </div>
+            
+            <div className="bg-yellow-50 p-6 rounded-xl">
+              <h3 className="text-xl font-semibold text-yellow-800 mb-3">Remember:</h3>
+              <ul className="text-lg text-yellow-700 space-y-2">
+                <li>• You'll have 60 seconds total</li>
+                <li>• Words change every {getSecondsPerWord(pendingRound.wordInterval)} seconds</li>
+                <li>• Include specific characters and actions</li>
+                <li>• Have fun and be creative!</li>
+              </ul>
+            </div>
+          </div>
+          
+          <button
+            onClick={startRoundFromInstructions}
+            className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-8 py-4 rounded-xl text-xl font-semibold hover:shadow-lg transform hover:scale-105 transition-all duration-200"
+          >
+            Begin Round {currentRoundIndex + 1}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (gameState === 'between-rounds') {
+    const messageIndex = Math.min(currentRoundIndex, encouragingMessages.length - 1);
+    
+    // Check if this was the final round (round 7, index 6)
+    if (currentRoundIndex >= 6) {
+      return (
+        <div className="min-h-screen bg-gradient-to-br from-purple-600 via-pink-500 to-red-500 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-2xl w-full text-center">
+            <div className="text-4xl font-bold text-gray-800 mb-6">
+              🎉 Congratulations! 🎉
+            </div>
+            <div className="text-xl text-gray-600 mb-8">
+              You've completed all 7 rounds of improv practice! Your creativity and quick thinking have been amazing!
+            </div>
+            <button
+              onClick={startNewGame}
+              className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-8 py-4 rounded-xl text-xl font-semibold hover:shadow-lg transform hover:scale-105 transition-all duration-200"
+            >
+              Play Again
+            </button>
+          </div>
+        </div>
+      );
+    }
+    
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-600 via-pink-500 to-red-500 flex items-center justify-center p-4">
+        <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-2xl w-full text-center">
+          <div className="text-3xl font-bold text-gray-800 mb-6">
+            Round {currentRoundIndex + 1} Complete!
+          </div>
+          <div className="text-xl text-gray-600 mb-8">
+            {encouragingMessages[messageIndex]}
+          </div>
+          <button
+            onClick={continueToNextRound}
+            className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-8 py-4 rounded-xl text-xl font-semibold hover:shadow-lg transform hover:scale-105 transition-all duration-200"
+          >
+            Next Round
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (gameState === 'completed') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-600 via-pink-500 to-red-500 flex items-center justify-center p-4">
+        <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-2xl w-full text-center">
+          <div className="text-4xl font-bold text-gray-800 mb-6">
+            🎉 Congratulations! 🎉
+          </div>
+          <div className="text-xl text-gray-600 mb-8">
+            You've completed all 7 rounds of improv practice! Your creativity and quick thinking have been amazing!
+          </div>
+          <button
+            onClick={startNewGame}
+            className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-8 py-4 rounded-xl text-xl font-semibold hover:shadow-lg transform hover:scale-105 transition-all duration-200"
+          >
+            Play Again
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return null;
+};
+
+export default ImprovPracticeApp;
